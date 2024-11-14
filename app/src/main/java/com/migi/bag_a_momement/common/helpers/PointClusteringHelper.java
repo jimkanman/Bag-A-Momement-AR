@@ -24,10 +24,20 @@ import java.util.List;
 public class PointClusteringHelper {
     // The resolution of the grid to allocate.  A smaller size means higher fidelity, but also
     // incurs a larger memory footprint.
-    private static final float GRID_CELL_SIZE = 0.02f; // Units: meters.
+    private static final float GRID_CELL_SIZE = 0.05f; // Units: meters.
 
     // Clusters with fewer than this many elements are ignored.
-    private static final int MIN_CLUSTER_ELEMENTS = 1;
+    private static final int MIN_CLUSTER_ELEMENTS = 10;
+
+    // 최대 크기 제한 설정 (단위: cm, 예시)
+    private static final float MAX_CLUSTER_WIDTH = 100.0f;
+    private static final float MAX_CLUSTER_HEIGHT = 100.0f;
+    private static final float MAX_CLUSTER_DEPTH =100.0f;
+    // 최대 크기 제한 설정 (단위: cm, 예시)
+    private static final float MIN_CLUSTER_WIDTH = 10.0f;
+    private static final float MIN_CLUSTER_HEIGHT = 10.0f;
+    private static final float MIN_CLUSTER_DEPTH = 10.0f;
+
 
     // The occupancy grid represents voxels in 3D space.  Each voxel is marked 'true' iff a depth
     // point with high confidence intersects it.  This grid volume represents a cuboid in space
@@ -52,6 +62,7 @@ public class PointClusteringHelper {
         // marked false.  This process continues until all cells are false.
         // Because the original grid is modified, this call will only produce results once.
         List<AABB> clusters = new ArrayList<>();
+        List<AABB> filterdclusters = new ArrayList<>();
         List<int[]> currentCluster = new ArrayList<>();
 
         // Searches the grid for clusters.
@@ -69,10 +80,50 @@ public class PointClusteringHelper {
                 }
             }
         }
+        for (AABB cluster : clusters) {
+            float width = cluster.getWidthInCm();
+            float height = cluster.getHeightInCm();
+            float depth = cluster.getDepthInCm();
 
-        return clusters;
+            // 클러스터의 크기가 제한 기준 이내인 경우에만 clusters에 추가
+            if (width <= MAX_CLUSTER_WIDTH && height <= MAX_CLUSTER_HEIGHT && depth <= MAX_CLUSTER_DEPTH
+            &&width >= MIN_CLUSTER_WIDTH && height >= MIN_CLUSTER_HEIGHT && depth >= MIN_CLUSTER_DEPTH) {
+                filterdclusters.add(cluster);
+            }
+        }
+
+        return filterdclusters;
     }
+    public AABB findNearestClusterToCenter(float[] screenCenterWorldCoords) {
+        // 모든 포인트에 대해 클러스터링 수행
+        List<AABB> clusters = findClusters();
 
+        AABB nearestCluster = null;
+        float minDistance = Float.MAX_VALUE;
+
+        // 각 클러스터의 중심과 화면 중심 좌표 간의 거리 계산
+        for (AABB cluster : clusters) {
+            // 클러스터의 중심 좌표 계산
+            float centerX = (cluster.minX + cluster.maxX) / 2;
+            float centerY = (cluster.minY + cluster.maxY) / 2;
+            float centerZ = (cluster.minZ + cluster.maxZ) / 2;
+
+            // 화면 중심과 클러스터 중심 간의 거리 계산
+            float distance = (float) Math.sqrt(
+                    Math.pow(centerX - screenCenterWorldCoords[0], 2) +
+                            Math.pow(centerY - screenCenterWorldCoords[1], 2) +
+                            Math.pow(centerZ - screenCenterWorldCoords[2], 2)
+            );
+
+            // 가장 가까운 클러스터 업데이트
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestCluster = cluster;
+            }
+        }
+
+        return nearestCluster;
+    }
     /** Finds the bounding box of all points, allocating a 3D grid of sufficient size. */
     private void allocateGrid(FloatBuffer points) {
         // Finds the min/max bounds of the pointcloud.

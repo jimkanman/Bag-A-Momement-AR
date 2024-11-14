@@ -52,4 +52,10 @@ public class AABB {
     public float getDepthInCm() {
         return (maxZ - minZ) * 100; // m -> cm 변환
     }
+
+    public boolean containsPoint(float x, float y, float z) {
+        return (x >= minX && x <= maxX) &&
+                (y >= minY && y <= maxY) &&
+                (z >= minZ && z <= maxZ);
+    }
 }

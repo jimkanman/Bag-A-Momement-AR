@@ -64,10 +64,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     private static final int DEPTH_BUFFER_SIZE = 16;
 
-    // 고정된 클러스터를 저장하는 변수
-    private List<AABB> fixedClusters = new ArrayList<>();
-    // 이전 클러스터 상태를 저장하기 위한 맵
-    private Map<AABB, ClusterState> previousClusterStates = new HashMap<>();
     private AABB selectedCluster;
 
     private Camera lastCamera;
@@ -84,7 +80,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if(motionEvent.getAction()==MotionEvent.ACTION_DOWN){
-                    handleTouch(motionEvent.getX(), motionEvent.getY());
+                    findClusterAtTouch(motionEvent.getX(), motionEvent.getY());
+                    view.performClick();
                     return true;
                 }
                 return false;
@@ -298,23 +295,33 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             //포인트 클라우드를 통해 클라우드 감지. 클러스터링을 통해 AABB를 찾아서 그림
             //모든 클러스터 박스 출력
 //            PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
-//            List<AABB> clusters = clusteringHelper.findNonOverlappingLargestClusters();
+//            List<AABB> clusters = clusteringHelper.findClusters();
 //            for (AABB aabb : clusters) {
 //                boxRenderer.draw(aabb, camera);
 //            }
-//      PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
-//      List<AABB> clusters = clusteringHelper.findNonOverlappingLargestClusters();
 
-//      // 안정적인 클러스터만 고정된 클러스터로 저장
-//      for (AABB cluster : clusters) {
-//        if (isStable(cluster)) {
-//          fixedClusters.add(cluster);
-//        }
-//      }
-//      // 고정된 클러스터는 그대로 렌더링
-//      for (AABB fixedCluster : fixedClusters) {
-//        boxRenderer.draw(fixedCluster, camera);
-//      }
+//            PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
+//            AABB centeredCluster = clusteringHelper.findNearestClusterToCenter(screenToWorldCoordinates(surfaceView.getWidth()/2, surfaceView.getHeight()/2, points));
+//            boxRenderer.draw(centeredCluster,camera);
+//
+//            //클러스터가 생성되었다면 snackbar로 메세지 출력
+//            if (centeredCluster != null) {
+//                messageSnackbarHelper.showMessage(this, "클러스터 감지됨: " );
+//            }
+
+//              PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
+//              List<AABB> clusters = clusteringHelper.findNonOverlappingLargestClusters();
+
+//                  // 안정적인 클러스터만 고정된 클러스터로 저장
+//              for (AABB cluster : clusters) {
+//                if (isStable(cluster)) {
+//                  fixedClusters.add(cluster);
+//                }
+//              }
+//              // 고정된 클러스터는 그대로 렌더링
+//              for (AABB fixedCluster : fixedClusters) {
+//                boxRenderer.draw(fixedCluster, camera);
+//              }
 
             if (selectedCluster != null) {
                 //터치로 선택된 박스를 렌더링
@@ -325,62 +332,47 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             Log.e(TAG, "Exception on the OpenGL thread", t);
         }
     }
-    private boolean isStable(AABB cluster) {
-        float stabilityThreshold = 0.05f;  // 위치 안정성 판단 기준 (예: 5cm)
-        float sizeThreshold = 0.02f;       // 크기 안정성 판단 기준 (예: 2cm)
 
-        ClusterState currentState = new ClusterState(cluster);
-        ClusterState previousState = previousClusterStates.get(cluster);
-
-        // 이전 상태가 없으면 새 클러스터로 간주하여 저장하고 false 반환
-        if (previousState == null) {
-            previousClusterStates.put(cluster, currentState);
-            return false;
-        }
-
-        // 중심 위치 변화량 계산
-        float positionChange = (float) Math.sqrt(
-                Math.pow(currentState.centerX - previousState.centerX, 2) +
-                        Math.pow(currentState.centerY - previousState.centerY, 2) +
-                        Math.pow(currentState.centerZ - previousState.centerZ, 2)
-        );
-
-        // 크기 변화량 계산
-        float widthChange = Math.abs(currentState.width - previousState.width);
-        float heightChange = Math.abs(currentState.height - previousState.height);
-        float depthChange = Math.abs(currentState.depth - previousState.depth);
-
-        // 위치와 크기 변화가 기준치 이하인지 확인
-        boolean isPositionStable = positionChange < stabilityThreshold;
-        boolean isSizeStable = widthChange < sizeThreshold && heightChange < sizeThreshold && depthChange < sizeThreshold;
-
-        // 현재 상태를 업데이트
-        previousClusterStates.put(cluster, currentState);
-
-        return isPositionStable && isSizeStable;
-    }
-    private void handleTouch(float x, float y) {
+    private void findClusterAtTouch(float touchX, float touchY) {
         if (session == null || lastCamera == null || lastFrame == null) {
             return;
         }
+
         try {
-            // 터치 좌표를 사용하여 깊이 데이터에서 3D 포인트 추출
-            Frame frame = lastFrame;
-            FloatBuffer points = DepthData.create(frame, session.createAnchor(lastCamera.getPose()));
+            // 현재 프레임의 깊이 데이터에서 포인트 클라우드를 가져옵니다.
+            FloatBuffer points = DepthData.create(lastFrame, session.createAnchor(lastCamera.getPose()));
             if (points == null) {
                 return;
             }
 
-            // 화면 좌표 (x, y)에서 해당하는 포인트를 찾음
-            float[] worldCoordinates = screenToWorldCoordinates(x, y, points);
-            if (worldCoordinates == null) {
+            // 터치한 좌표를 월드 좌표로 변환
+            float[] touchWorldCoords = screenToWorldCoordinates(touchX, touchY, points);
+            if (touchWorldCoords == null) {
                 return;
             }
-            Log.i(TAG, "handleTouch-"+"touch3dPoint: "+worldCoordinates[0]+" "+worldCoordinates[1]+" "+worldCoordinates[2]);
-            // 추출된 포인트를 기준으로 클러스터링 수행
-            findNearestCluster(worldCoordinates[0], worldCoordinates[1], worldCoordinates[2]);
+
+            //전체 클러스터 목록 생성
+            PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
+            List<AABB> clusters = clusteringHelper.findClusters();
+            AABB targetCluster = null;
+
+            // 터치 위치를 포함하는 클러스터 탐색
+            for (AABB cluster : clusters) {
+                if (cluster.containsPoint(touchWorldCoords[0], touchWorldCoords[1], touchWorldCoords[2])) {
+                    targetCluster = cluster;
+                    break;
+                }
+            }
+
+            // 찾은 클러스터를 선택된 클러스터로 설정하고 렌더링합니다.
+            selectedCluster = targetCluster;
+            if (selectedCluster != null) {
+                Log.i(TAG, "Cluster found at touch location: " + selectedCluster);
+            } else {
+                Log.i(TAG, "No cluster found at touch location.");
+            }
         } catch (Exception e) {
-            Log.e(TAG, "Exception in handleTouch: ", e);
+            Log.e(TAG, "Exception in findClusterAtTouch: ", e);
         }
     }
 
@@ -439,34 +431,4 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         return closestPoint;
     }
 
-    // 터치로 선택한 포인트 주변을 중심으로 클러스터링
-    private void findNearestCluster(float x, float y, float z) {
-        FloatBuffer points = DepthData.create(lastFrame, session.createAnchor(lastCamera.getPose()));
-        if (points == null) {
-            return;
-        }
-
-        PointClusteringHelper clusteringHelper = new PointClusteringHelper(points);
-        List<AABB> clusters = clusteringHelper.findClusters();
-        Log.i(TAG, "findNearestCluster: "+"clusters"+clusters.size());
-        AABB nearestCluster = null;
-        float minDistance = Float.MAX_VALUE;
-        float maxTouchRadius = 0.2f; // 터치 반경 (예: 20cm)
-        for (AABB cluster : clusters) {
-
-            float centerX = (cluster.minX + cluster.maxX) / 2;
-            float centerY = (cluster.minY + cluster.maxY) / 2;
-            float centerZ = (cluster.minZ + cluster.maxZ) / 2;
-
-            float distance = (float) Math.sqrt(Math.pow(centerX - x, 2) + Math.pow(centerY - y, 2) + Math.pow(centerZ - z, 2));
-            Log.i(TAG, "findNearestCluster: "+"distance"+distance);
-            if (distance < minDistance &&distance <= maxTouchRadius) {
-                Log.i(TAG, "findNearestCluster: found"+cluster+" distance: "+distance+"Float.MAX_VALUE: "+Float.MAX_VALUE);
-                minDistance = distance;
-                nearestCluster = cluster;
-            }
-        }
-        Log.i(TAG, "findNearestCluster: nearleastCluster"+nearestCluster);
-        selectedCluster = nearestCluster;
-    }
 }
