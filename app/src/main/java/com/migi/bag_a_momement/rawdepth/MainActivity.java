@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     private Camera lastCamera;
     private Frame lastFrame;
+    private FloatBuffer lastPoints;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,12 +80,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         surfaceView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                if(motionEvent.getAction()==MotionEvent.ACTION_DOWN){
+                int touchActiion = motionEvent.getAction();
+                if (touchActiion == MotionEvent.ACTION_DOWN) {
                     findClusterAtTouch(motionEvent.getX(), motionEvent.getY());
-                    view.performClick();
-                    return true;
+                } else if (touchActiion == MotionEvent.ACTION_MOVE) {
+                    handleTouchMove(motionEvent.getX(), motionEvent.getY());
                 }
-                return false;
+                return true;
             }
         });
 
@@ -269,6 +271,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
             // 현재 프레임의 깊이 데이터를 가져옴
             FloatBuffer points = DepthData.create(frame, session.createAnchor(camera.getPose()));
+            lastPoints=points;
             if (points == null) {
                 return;
             }
@@ -333,6 +336,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
     }
 
+    private void handleTouchMove(float x, float y) {
+        if (selectedCluster != null&&lastPoints!=null) {
+            // 화면 좌표를 사용하여 새 위치를 계산
+            float[] newWorldCoords = screenToWorldCoordinates(x, y,lastPoints );
+//            if (newWorldCoords != null) {
+//                // 새 위치로 selectedCluster 이동
+//                selectedCluster.setCenter(newWorldCoords[0], newWorldCoords[1], newWorldCoords[2]);
+//            }
+        }
+    }
+
+
     private void findClusterAtTouch(float touchX, float touchY) {
         if (session == null || lastCamera == null || lastFrame == null) {
             return;
@@ -367,17 +382,20 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             // 찾은 클러스터를 선택된 클러스터로 설정하고 렌더링합니다.
             selectedCluster = targetCluster;
             if (selectedCluster != null) {
-                Log.i(TAG, "Cluster found at touch location: " + selectedCluster);
+                messageSnackbarHelper.showMessage(this, "클러스터 선택됨: " );
             } else {
-                Log.i(TAG, "No cluster found at touch location.");
+                messageSnackbarHelper.showMessage(this, "클러스터 선택 실패");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Exception in findClusterAtTouch: ", e);
+            Log.e(TAG, "Exception in findClusterA`tTouch: ", e);
         }
     }
 
     // 화면 좌표를 사용하여 깊이 데이터에서 3D 포인트 추출
     private float[] screenToWorldCoordinates(float screenX, float screenY, FloatBuffer points) {
+        if(points==null){
+            return null;
+        }
         //월드좌표 이용
         // NDC (Normalized Device Coordinates)로 변환
         float ndcX = (screenX / surfaceView.getWidth()) * 2.0f - 1.0f;

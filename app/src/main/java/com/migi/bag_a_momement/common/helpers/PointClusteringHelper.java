@@ -24,10 +24,10 @@ import java.util.List;
 public class PointClusteringHelper {
     // The resolution of the grid to allocate.  A smaller size means higher fidelity, but also
     // incurs a larger memory footprint.
-    private static final float GRID_CELL_SIZE = 0.05f; // Units: meters.
+    private static final float GRID_CELL_SIZE = 0.02f; // Units: meters.
 
     // Clusters with fewer than this many elements are ignored.
-    private static final int MIN_CLUSTER_ELEMENTS = 10;
+    private static final int MIN_CLUSTER_ELEMENTS = 1;
 
     // 최대 크기 제한 설정 (단위: cm, 예시)
     private static final float MAX_CLUSTER_WIDTH = 100.0f;
@@ -39,14 +39,8 @@ public class PointClusteringHelper {
     private static final float MIN_CLUSTER_DEPTH = 10.0f;
 
 
-    // The occupancy grid represents voxels in 3D space.  Each voxel is marked 'true' iff a depth
-    // point with high confidence intersects it.  This grid volume represents a cuboid in space
-    // defined by the bounding box of the pointcloud.
     private boolean[][][] occupancyGrid;
 
-    // The translational offset of the grid relative to the world coordinates.  This offset is
-    // necessary for cases when the bounding box of depth points don't overlap the origin.  This
-    // value is equivalent to the minimum corner of the point cloud bounding box.
     private float[] gridOriginOffset = new float[3];
 
     public PointClusteringHelper(FloatBuffer points) {
@@ -214,41 +208,5 @@ public class PointClusteringHelper {
                 index[2] >= 0 && index[2] < grid[0][0].length;
     }
 
-    public List<AABB> findNonOverlappingLargestClusters() {
-        List<AABB> clusters = findClusters(); // 기본 클러스터링 수행
-        List<AABB> nonOverlappingClusters = new ArrayList<>();
-
-        for (AABB current : clusters) {
-            boolean isLargest = true;
-            Iterator<AABB> iterator = nonOverlappingClusters.iterator();
-
-            while (iterator.hasNext()) {
-                AABB existing = iterator.next();
-                if (isOverlapping(current, existing)) {
-                    // 겹치는 경우, 현재 클러스터가 기존 클러스터보다 작은지 확인
-                    if (current.getVolume() <= existing.getVolume()) {
-                        isLargest = false;
-                        break;
-                    }
-                    // 현재 클러스터가 더 크다면 Iterator를 사용해 기존 클러스터 제거
-                    else iterator.remove();
-                }
-            }
-            // 현재 클러스터가 가장 큰 경우에만 리스트에 추가
-            if (isLargest&&current!=null) {
-                nonOverlappingClusters.add(current);
-            }
-        }
-        return nonOverlappingClusters;
-    }
-
-    private boolean isOverlapping(AABB a, AABB b) {
-        if (a == null || b == null) {
-            return false; // AABB가 null이면 겹치지 않음으로 처리
-        }
-        return (a.minX <= b.maxX && a.maxX >= b.minX) &&
-                (a.minY <= b.maxY && a.maxY >= b.minY) &&
-                (a.minZ <= b.maxZ && a.maxZ >= b.minZ);
-    }
 
 }

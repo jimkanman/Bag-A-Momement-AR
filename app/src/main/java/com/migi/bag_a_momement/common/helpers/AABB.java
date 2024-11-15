@@ -58,4 +58,16 @@ public class AABB {
                 (y >= minY && y <= maxY) &&
                 (z >= minZ && z <= maxZ);
     }
+
+    public void setCenter(float newWorldCoord, float newWorldCoord1, float newWorldCoord2) {
+        float width = getWidthInCm();
+        float height = getHeightInCm();
+        float depth = getDepthInCm();
+        minX = newWorldCoord - width / 2;
+        maxX = newWorldCoord + width / 2;
+        minY = newWorldCoord1 - height / 2;
+        maxY = newWorldCoord1 + height / 2;
+        minZ = newWorldCoord2 - depth / 2;
+        maxZ = newWorldCoord2 + depth / 2;
+    }
 }
