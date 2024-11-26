@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -69,6 +72,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private Camera lastCamera;
     private Frame lastFrame;
     private FloatBuffer lastPoints;
+    private LinearLayout guide_text_container=findViewById(R.id.guide_text_container);
+    private LinearLayout result_popup_container=findViewById(R.id.result_popup);
+    private TextView result_text=findViewById(R.id.result_body);
+    private Button retrybtn=findViewById(R.id.retry_button);
+    private Button confirmbtn=findViewById(R.id.confirm_button);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +95,23 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     handleTouchMove(motionEvent.getX(), motionEvent.getY());
                 }
                 return true;
+            }
+        });
+        retrybtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectedCluster=null;
+                guide_text_container.setVisibility(View.VISIBLE);
+                result_popup_container.setVisibility(View.GONE);
+            }
+        });
+        confirmbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(selectedCluster!=null){
+                    //서버 전송 후 액티비티 종료
+                    finish();
+                }
             }
         });
 
@@ -329,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             if (selectedCluster != null) {
                 //터치로 선택된 박스를 렌더링
                 boxRenderer.drawSelected(selectedCluster, camera);
-                messageSnackbarHelper.showMessage(this,"클러스터 실제 크기: w:"+selectedCluster.getWidthInCm()+"h:"+selectedCluster.getHeightInCm()+"d:"+selectedCluster.getDepthInCm());
+
             }
         } catch (Throwable t) {
             Log.e(TAG, "Exception on the OpenGL thread", t);
@@ -379,10 +404,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
             }
 
-            // 찾은 클러스터를 선택된 클러스터로 설정하고 렌더링합니다.
+            // 찾은 클러스터를 선택된 클러스터로 설정하
             selectedCluster = targetCluster;
             if (selectedCluster != null) {
-                messageSnackbarHelper.showMessage(this, "클러스터 선택됨: " );
+                guide_text_container.setVisibility(View.GONE);
+                result_popup_container.setVisibility(View.VISIBLE);
+                result_text.setText("w:"+selectedCluster.getWidthInCm()+"\nh:"+selectedCluster.getHeightInCm()+"\nd:"+selectedCluster.getDepthInCm());
+
             } else {
                 messageSnackbarHelper.showMessage(this, "클러스터 선택 실패");
             }
