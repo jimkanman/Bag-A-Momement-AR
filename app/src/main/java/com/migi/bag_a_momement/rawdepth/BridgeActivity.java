@@ -1,5 +1,12 @@
 package com.migi.bag_a_momement.rawdepth;
 
+import com.migi.bag_a_momement.rawdepth.MainActivity;
+import io.flutter.embedding.android.FlutterActivity;
+import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugin.common.MethodChannel;
+import android.content.Intent;
+import androidx.annotation.NonNull;
+
 public class BridgeActivity extends FlutterActivity {
     // Channel name
     private static final String CHANNEL = "com.example.example/message";
@@ -12,7 +19,7 @@ public class BridgeActivity extends FlutterActivity {
 
     // Invoked method
     private void getMessageAndroid() {
-        Intent intent = new Intent(this, ArActivity.class);
+        Intent intent = new Intent(this, MainActivity.class);
         startActivityForResult(intent, REQUEST_CODE);
     }
 
