@@ -313,10 +313,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 return;
             }
 
-//            //깊이 데이터가 생성되었으면 메세지를 숨김
-//            if (messageSnackbarHelper.isShowing()) {
-//                messageSnackbarHelper.hide(this);
-//            }
 
             // 카메라 트레킹(카메라 이동에 대한 인식)이 되지 않으면 실패 이유를 보여줌
             if (camera.getTrackingState() == TrackingState.PAUSED) {
@@ -378,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private void handleTouchMove(float x, float y) {
         if (selectedCluster != null&&lastPoints!=null) {
             // 화면 좌표를 사용하여 새 위치를 계산
-            float[] newWorldCoords = screenToWorldCoordinates(x, y,lastPoints );
+//            float[] newWorldCoords = screenToWorldCoordinates(x, y,lastPoints );
 //            if (newWorldCoords != null) {
 //                // 새 위치로 selectedCluster 이동
 //                selectedCluster.setCenter(newWorldCoords[0], newWorldCoords[1], newWorldCoords[2]);

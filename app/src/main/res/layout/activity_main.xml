@@ -60,7 +60,7 @@
       android:padding="16dp"
       android:gravity="center"
       android:elevation="8dp"
-      android:visibility="gone">
+      android:visibility="invisible">
 
     <TextView
         android:id="@+id/result_title"
