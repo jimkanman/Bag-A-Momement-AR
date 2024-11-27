@@ -40,7 +40,8 @@ public class AABB {
 
     // 박스의 가로 크기를 cm 단위로 반환
     public float getWidthInCm() {
-        return (maxX - minX) * 100; // m -> cm 변환
+        // m -> cm 변환. 소숫점 버림
+        return (maxX - minX) * 100;
     }
 
     // 박스의 세로 크기를 cm 단위로 반환

@@ -54,6 +54,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private GLSurfaceView surfaceView;
+    private LinearLayout guide_text_container;
+    private LinearLayout result_popup_container;
+    private TextView result_text;
+    private Button retrybtn;
+    private Button confirmbtn;
 
     private boolean installRequested;
 
@@ -65,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
     private final BoxRenderer boxRenderer = new BoxRenderer();
 
+
     private static final int DEPTH_BUFFER_SIZE = 16;
 
     private AABB selectedCluster;
@@ -72,18 +78,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private Camera lastCamera;
     private Frame lastFrame;
     private FloatBuffer lastPoints;
-    private LinearLayout guide_text_container=findViewById(R.id.guide_text_container);
-    private LinearLayout result_popup_container=findViewById(R.id.result_popup);
-    private TextView result_text=findViewById(R.id.result_body);
-    private Button retrybtn=findViewById(R.id.retry_button);
-    private Button confirmbtn=findViewById(R.id.confirm_button);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         surfaceView = findViewById(R.id.surfaceview);
+        guide_text_container=findViewById(R.id.guide_text_container);
+        result_popup_container=findViewById(R.id.result_popup);
+        result_text=findViewById(R.id.result_body);
+        retrybtn=findViewById(R.id.retry_button);
+        confirmbtn=findViewById(R.id.confirm_button);
         displayRotationHelper = new DisplayRotationHelper(this);
+
 
         surfaceView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -207,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         // GLSurfaceView와 DisplayRotationHelper를 재개
         surfaceView.onResume();
         displayRotationHelper.onResume();
-        messageSnackbarHelper.showMessage(this, "데이터를 기다리는 중...");
+        guide_text_container.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -301,10 +308,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 return;
             }
 
-            //깊이 데이터가 생성되었으면 메세지를 숨김
-            if (messageSnackbarHelper.isShowing()) {
-                messageSnackbarHelper.hide(this);
-            }
+//            //깊이 데이터가 생성되었으면 메세지를 숨김
+//            if (messageSnackbarHelper.isShowing()) {
+//                messageSnackbarHelper.hide(this);
+//            }
 
             // 카메라 트레킹(카메라 이동에 대한 인식)이 되지 않으면 실패 이유를 보여줌
             if (camera.getTrackingState() == TrackingState.PAUSED) {
@@ -354,7 +361,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             if (selectedCluster != null) {
                 //터치로 선택된 박스를 렌더링
                 boxRenderer.drawSelected(selectedCluster, camera);
-
+                guide_text_container.setVisibility(View.GONE);
+                result_popup_container.setVisibility(View.VISIBLE);
+                result_text.setText("가로"+(int)selectedCluster.getWidthInCm()+"세로"+(int)selectedCluster.getHeightInCm()+"높이"+(int)selectedCluster.getDepthInCm());
             }
         } catch (Throwable t) {
             Log.e(TAG, "Exception on the OpenGL thread", t);
@@ -404,13 +413,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
             }
 
-            // 찾은 클러스터를 선택된 클러스터로 설정하
+            // 찾은 클러스터를 선택된 클러스터로 설정하고 렌더링합니다.
             selectedCluster = targetCluster;
             if (selectedCluster != null) {
-                guide_text_container.setVisibility(View.GONE);
-                result_popup_container.setVisibility(View.VISIBLE);
-                result_text.setText("w:"+selectedCluster.getWidthInCm()+"\nh:"+selectedCluster.getHeightInCm()+"\nd:"+selectedCluster.getDepthInCm());
-
+                messageSnackbarHelper.showMessage(this, "클러스터 선택됨: " );
             } else {
                 messageSnackbarHelper.showMessage(this, "클러스터 선택 실패");
             }
