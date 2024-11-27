@@ -1,5 +1,6 @@
 package com.migi.bag_a_momement.rawdepth;
 
+import android.content.Intent;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
@@ -90,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         retrybtn=findViewById(R.id.retry_button);
         confirmbtn=findViewById(R.id.confirm_button);
         displayRotationHelper = new DisplayRotationHelper(this);
+        Intent resultIntent = new Intent();
 
 
         surfaceView.setOnTouchListener(new View.OnTouchListener() {
@@ -116,7 +118,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public void onClick(View v) {
                 if(selectedCluster!=null){
-                    //서버 전송 후 액티비티 종료
+                    resultIntent.putExtra("width", selectedCluster.getWidthInCm());
+                    resultIntent.putExtra("height", selectedCluster.getHeightInCm());
+                    resultIntent.putExtra("depth", selectedCluster.getDepthInCm());
+                    setResult(RESULT_OK, resultIntent);
                     finish();
                 }
             }
