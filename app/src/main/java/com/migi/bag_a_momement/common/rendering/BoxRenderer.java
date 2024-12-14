@@ -36,11 +36,11 @@ public class BoxRenderer {
     private static final String VERTEX_SHADER_NAME = "shaders/box.vert";
     private static final String FRAGMENT_SHADER_NAME = "shaders/box.frag";
 
-    // Stores the triangulation of the cube.
+    // 박스 정점을 저장
     private FloatBuffer vertexBuffer;
     private ShortBuffer indexBuffer;
 
-    // Shader program.
+    // 쉐이더
     private int program;
     private int vPosition;
     private int uViewProjection;
@@ -68,7 +68,7 @@ public class BoxRenderer {
         vPosition = GLES20.glGetAttribLocation(program, "vPosition");
         uViewProjection = GLES20.glGetUniformLocation(program, "uViewProjection");
 
-        // Sets the index buffer, which is constant regardless of the size/position of the cube.
+
         short[] indices = {
                 0, 1, 2, 2, 1, 3, // Front.
                 4, 5, 6, 6, 5, 7, // Back.
@@ -77,14 +77,14 @@ public class BoxRenderer {
                 16, 17, 18, 18, 17, 19, // Top.
                 20, 21, 22, 22, 21, 23  // Bottom.
         };
-        ByteBuffer indexByteBuffer = ByteBuffer.allocateDirect(2 * indices.length); // 2 bytes per short.
+        ByteBuffer indexByteBuffer = ByteBuffer.allocateDirect(2 * indices.length);
         indexByteBuffer.order(ByteOrder.nativeOrder());
         indexBuffer = indexByteBuffer.asShortBuffer();
         indexBuffer.rewind();
         indexBuffer.put(indices);
 
-        // Allocates vertexBuffer.
-        ByteBuffer vertexByteBuffer = ByteBuffer.allocateDirect(288); // 6 faces * 4 corners * 3 dimensions * 4 bytes-per-float.
+
+        ByteBuffer vertexByteBuffer = ByteBuffer.allocateDirect(288); // 6 faces * 4 vertices * 3 coordinates * 4 bytes.
         vertexByteBuffer.order(ByteOrder.nativeOrder());
         vertexBuffer = vertexByteBuffer.asFloatBuffer();
         ShaderUtil.checkGLError(TAG, "Init complete");
@@ -135,7 +135,6 @@ public class BoxRenderer {
         float[] viewProjection = new float[16];
         Matrix.multiplyMM(viewProjection, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        // Updates the positions of the cube.
         setCubeDimensions(aabb);
         GLES20.glUseProgram(program);
         GLES20.glUniformMatrix4fv(uViewProjection, 1, false, viewProjection, 0);
@@ -147,7 +146,6 @@ public class BoxRenderer {
                 12, vertexBuffer);
         ShaderUtil.checkGLError(TAG, "Draw");
 
-        // Draws a cube.
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         indexBuffer.rewind();
@@ -163,7 +161,6 @@ public class BoxRenderer {
         float[] viewProjection = new float[16];
         Matrix.multiplyMM(viewProjection, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        // Updates the positions of the cube.
         setCubeDimensions(aabb);
         GLES20.glUseProgram(program);
         GLES20.glUniformMatrix4fv(uViewProjection, 1, false, viewProjection, 0);
@@ -175,7 +172,6 @@ public class BoxRenderer {
                 12, vertexBuffer);
         ShaderUtil.checkGLError(TAG, "Draw");
 
-        // Draws a cube.
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         indexBuffer.rewind();
