@@ -1,22 +1,6 @@
-/*
- * Copyright 2021 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.migi.bag_a_momement.common.helpers;
 
-// An axis-aligned bounding box is defined by the minimum and maximum extends in each dimension.
+
 public class AABB {
     public float minX = Float.MAX_VALUE;
     public float minY = Float.MAX_VALUE;
@@ -40,8 +24,7 @@ public class AABB {
 
     // 박스의 가로 크기를 cm 단위로 반환
     public float getWidthInCm() {
-        // m -> cm 변환. 소숫점 버림
-        return (maxX - minX) * 100;
+        return (maxX - minX) * 100; // m -> cm 변환
     }
 
     // 박스의 세로 크기를 cm 단위로 반환
@@ -58,17 +41,5 @@ public class AABB {
         return (x >= minX && x <= maxX) &&
                 (y >= minY && y <= maxY) &&
                 (z >= minZ && z <= maxZ);
-    }
-
-    public void setCenter(float newWorldCoord, float newWorldCoord1, float newWorldCoord2) {
-        float width = getWidthInCm();
-        float height = getHeightInCm();
-        float depth = getDepthInCm();
-        minX = newWorldCoord - width / 2;
-        maxX = newWorldCoord + width / 2;
-        minY = newWorldCoord1 - height / 2;
-        maxY = newWorldCoord1 + height / 2;
-        minZ = newWorldCoord2 - depth / 2;
-        maxZ = newWorldCoord2 + depth / 2;
     }
 }
